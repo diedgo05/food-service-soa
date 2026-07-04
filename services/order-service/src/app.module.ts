@@ -9,11 +9,15 @@ import { RedisModule } from './redis/redis.module';
   imports: [
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT) || 5433,
-      username: process.env.DB_USER || 'postgres',
-      password: process.env.DB_PASS || 'postgres',
-      database: process.env.DB_NAME || 'order_db',
+      ...(process.env.DATABASE_URL
+        ? { url: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } }
+        : {
+            host: process.env.DB_HOST || 'localhost',
+            port: parseInt(process.env.DB_PORT) || 5433,
+            username: process.env.DB_USER || 'postgres',
+            password: process.env.DB_PASS || 'postgres',
+            database: process.env.DB_NAME || 'order_db',
+          }),
       autoLoadEntities: true,
       synchronize: true,
     }),

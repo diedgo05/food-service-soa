@@ -10,10 +10,12 @@ export class RedisSubscriberService implements OnModuleInit, OnModuleDestroy {
   constructor(private readonly deliveryService: DeliveryService) {}
 
   async onModuleInit() {
-    this.subscriber = new Redis({
-      host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT) || 6379,
-    });
+    this.subscriber = process.env.REDIS_URL
+      ? new Redis(process.env.REDIS_URL)
+      : new Redis({
+          host: process.env.REDIS_HOST || 'localhost',
+          port: parseInt(process.env.REDIS_PORT) || 6379,
+        });
 
     await this.subscriber.subscribe('order.confirmed', 'order.cancelled');
     console.log('Delivery Service subscribed to: order.confirmed, order.cancelled');
