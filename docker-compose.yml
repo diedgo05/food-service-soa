@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  order-db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: order_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - '5433:5432'
+    volumes:
+      - order_data:/var/lib/postgresql/data
+
+  restaurant-db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: restaurant_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - '5434:5432'
+    volumes:
+      - restaurant_data:/var/lib/postgresql/data
+
+  delivery-db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: delivery_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - '5435:5432'
+    volumes:
+      - delivery_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+
+  order-service:
+    build: ./services/order-service
+    ports:
+      - '3000:3000'
+    environment:
+      DB_HOST: order-db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASS: postgres
+      DB_NAME: order_db
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: food-delivery-super-secret-key-2024
+      RESTAURANT_SERVICE_URL: http://restaurant-service:3001
+      DELIVERY_SERVICE_URL: http://delivery-service:3002
+    depends_on:
+      - order-db
+      - redis
+      - restaurant-service
+      - delivery-service
+
+  restaurant-service:
+    build: ./services/restaurant-service
+    ports:
+      - '3001:3001'
+    environment:
+      DB_HOST: restaurant-db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASS: postgres
+      DB_NAME: restaurant_db
+      PORT: 3001
+    depends_on:
+      - restaurant-db
+
+  delivery-service:
+    build: ./services/delivery-service
+    ports:
+      - '3002:3002'
+    environment:
+      DB_HOST: delivery-db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASS: postgres
+      DB_NAME: delivery_db
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      PORT: 3002
+    depends_on:
+      - delivery-db
+      - redis
+
+volumes:
+  order_data:
+  restaurant_data:
+  delivery_data:
