@@ -11,6 +11,11 @@ services:
       - '5433:5432'
     volumes:
       - order_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
 
   restaurant-db:
     image: postgres:15-alpine
@@ -22,6 +27,11 @@ services:
       - '5434:5432'
     volumes:
       - restaurant_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
 
   delivery-db:
     image: postgres:15-alpine
@@ -33,11 +43,21 @@ services:
       - '5435:5432'
     volumes:
       - delivery_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
 
   redis:
     image: redis:7-alpine
     ports:
-      - '6379:6379'
+      - '6380:6379'
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
 
   order-service:
     build: ./services/order-service
@@ -55,10 +75,14 @@ services:
       RESTAURANT_SERVICE_URL: http://restaurant-service:3001
       DELIVERY_SERVICE_URL: http://delivery-service:3002
     depends_on:
-      - order-db
-      - redis
-      - restaurant-service
-      - delivery-service
+      order-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      restaurant-service:
+        condition: service_started
+      delivery-service:
+        condition: service_started
 
   restaurant-service:
     build: ./services/restaurant-service
@@ -72,7 +96,8 @@ services:
       DB_NAME: restaurant_db
       PORT: 3001
     depends_on:
-      - restaurant-db
+      restaurant-db:
+        condition: service_healthy
 
   delivery-service:
     build: ./services/delivery-service
@@ -88,8 +113,10 @@ services:
       REDIS_PORT: 6379
       PORT: 3002
     depends_on:
-      - delivery-db
-      - redis
+      delivery-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
 volumes:
   order_data:
